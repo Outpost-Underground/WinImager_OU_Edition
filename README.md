@@ -2,93 +2,112 @@ The WinImager utility with a custom skin.
 
 WinImager - Disk Imaging Utility (v1.0)
 
-WinImager is a custom-built Windows disk imaging utility designed to create raw disk images from physical drives with error handling and logging. 
-It provides users with a graphical interface to select a physical drive, choose a destination for the image file, and start the imaging process. 
-The utility is designed to handle large drives and unreadable sectors, ensuring the imaging process completes reliably while maintaining a detailed 
-record of any issues encountered.
+## Overview
 
-Key Features:
+WinImager is a **Windows application** designed to create an **exact, sector-by-sector copy** (an “image”) of any selected physical drive. It is particularly useful for:
 
-✅ Physical Drive Selection
+- **Data Recovery**: Safely copying data from failing or aging drives before they completely fail.  
+- **Digital Forensics**: Generating a **forensically sound** image of a drive, along with optional integrity checks (MD5 & SHA1).
 
-Automatically detects and lists all physical drives connected to the system (e.g., \\.\PHYSICALDRIVE0).
-Displays drive size to help users identify the correct drive to image.
+The app reads an entire drive in user-defined “chunks,” can operate in a “Gentle Mode” to minimize strain on fragile drives, and can compute **MD5/SHA1 hashes** to verify the final image accurately represents the source data.
 
-✅ Raw Disk Imaging
+---
 
-Creates a sector-by-sector image of the selected drive, including all readable sectors.
-Supports large drives (e.g., 1TB+ external drives).
-Uses DeviceIoControl (IOCTL_DISK_GET_DRIVE_GEOMETRY_EX) to obtain the drive’s true size and sector geometry, ensuring an accurate image.
+## Key Features
 
-✅ Error Handling
+1. **Physical Drive Enumeration**  
+   - Lists all recognized physical disks (e.g., `\\.\PhysicalDrive0`) via Windows Management Instrumentation (WMI).  
+   - Displays each drive’s reported size in gigabytes (GB).
 
-Automatically handles unreadable sectors by zero-filling them in the image file.
-Logs all errors encountered during the imaging process, including sector numbers and error details.
+2. **Accurate Geometry & Raw Copy**  
+   - Uses **DeviceIoControl (IOCTL_DISK_GET_DRIVE_GEOMETRY_EX)** to detect the drive’s **true size** and sector information.  
+   - Creates a **bit-for-bit** copy (including hidden and system areas), ensuring data integrity and completeness.
 
-✅ Detailed Logging & Reporting
+3. **Robust Error Handling**  
+   - Automatically **zero-fills** any unreadable chunk.  
+   - Records partial reads or errors in a detailed **log file**.
 
-Generates a .txt log file saved alongside the image file.
-The log file includes:
-Drive path and size
-Total sectors read
-Number of successful sectors
-Number of sectors with errors (zero-filled)
-Total bytes read
-Any read errors encountered
+4. **Gentle Mode**  
+   - Slows down the imaging process with small pauses, reducing stress on old or physically fragile hard drives.
 
-✅ Progress Tracking
+5. **User-Defined “Chunk” Size**  
+   - Choose how many megabytes WinImager reads at once. Typically 4 MB for modern drives.  
+   - Larger chunks (8+ MB) can speed up imaging on fast USB 3.1+ SSDs.  
+   - Smaller chunks (1 MB or less) may help on problematic or older hardware.
 
-Provides real-time progress updates via a progress bar and percentage label in the UI.
-Ensures the user can monitor the progress of the imaging process.
+6. **Optional MD5 & SHA1 Hashing**  
+   - After imaging, WinImager can re-read the newly created `.img` file to confirm it matches what was read from the source drive.  
+   - This provides **cryptographic assurance** that the image file is accurate and unaltered.
 
-✅ User-Friendly Interface
+7. **Drive Metadata in the Log**  
+   - Pulls **Model** and **Serial Number** from the drive (via WMI).  
+   - Logs the **start/end times** of imaging and hashing, plus total elapsed time.
 
-Simple GUI built with WinForms for easy use.
-Allows users to:
-Select a drive
-Choose an image file destination
-Start and monitor the imaging process
+8. **Detailed Text Log**  
+   - Automatically creates a `.txt` file next to your `.img` file, containing:  
+     - Source drive path, model, serial  
+     - Imaging start/end times, chunk settings, error counts  
+     - (If enabled) MD5 & SHA1 values for source data vs. final image
 
+---
 
-How It Works:
-Select a Physical Drive from the dropdown list (e.g., \\.\PHYSICALDRIVE0).
-Browse to choose a destination folder for the image (.img).
-Click "Create Disk Image" to start the imaging process.
-The app reads the drive sector-by-sector, skipping unreadable sectors and zero-filling them as needed.
-Once complete, a log file is saved in the same directory as the image file with a detailed report of the process.
+## Use Cases
 
-In testing, the application produced images with a hash match to images produced by professional digital forensic tools. 
+1. **Data Recovery**  
+   - Copy data from a partially failing drive, zero-filling unreadable areas.  
+   - Use Gentle Mode if the drive is old or making unusual noises.
 
+2. **Forensic Imaging**  
+   - Make a reliable copy of a suspect’s drive (or a device under investigation).  
+   - Enable MD5/SHA1 to confirm no data discrepancy.  
+   - Record drive model/serial and imaging timestamps in the log for an audit trail.
 
-Example Log File (MyDiskImage.txt):
+3. **Cloning & Backup**  
+   - Create an **exact backup** of a disk, preserving all partitions and boot info.  
+   - Keep the log for reference, so you know if any sectors were problematic.
 
-=== Begin Imaging Log ===
+---
 
-Drive Path: \\.\PHYSICALDRIVE0
+## How to Use WinImager
 
-Total Bytes (from geometry): 1000204886016
+1. **Run as Administrator**  
+   - Right-click `WinImager.exe` → “Run as administrator.”  
 
-Bytes Per Sector: 512
+2. **Select Source Drive**  
+   - Pick the drive from the dropdown (`\\.\PhysicalDrive0`, etc.).  
+   - Confirm you’ve identified the correct drive.
 
-[ERROR] Sector 1234 read failed: The drive cannot find the sector requested. Zero-filling sector.
+3. **Browse for Destination**  
+   - Choose a folder and `.img` file name (ensure adequate free space).
 
-Total Sectors: 1953525168
+4. **Adjust Settings**  
+   - **Chunk (MB)**: Typically set 4 MB for standard usage. Increase for speed if you have a very fast device, or decrease if you see errors.  
+   - **Gentle Mode**: Check if the drive is in bad shape (failing, mechanical noises).  
+   - **Compute MD5 & SHA1**: Check if you want a thorough verification.
 
-Successful Sectors: 1953525160
+5. **Click “Create Disk Image”**  
+   - Watch the **first progress bar** for imaging progress, and a **second** progress bar for hashing (if enabled).  
 
-Error Sectors: 8
+6. **Review Results**  
+   - After completion, a `.txt` file will be created next to your `.img` with detailed logs:  
+     - Model/Serial, chunk size, errors, start/end times, optional hashing results.
 
-Total Bytes Read: 1000204886016
+---
 
-=== End of Imaging Log ===
+## Best Practices
 
-Summary of Improvements in the Latest Version:
-- More accurate disk size detection using DeviceIoControl.
-- Sector-by-sector reading to handle large drives efficiently.
-- Error handling and zero-filling for unreadable sectors.
-- Detailed logging to provide users with a report of the imaging process.
-- Text log file output saved automatically alongside the .img file.
-- Progress bar and UI updates for real-time feedback.
+- **Ensure Enough Space**: The destination disk/folder must have space at least equal to the source drive’s capacity.  
+- **Gentle Mode** for Failing Drives: Slows throughput slightly, helping avoid additional strain.  
+- **Hashing**: Use MD5 & SHA1 if you need **proof** of data integrity (common in forensic contexts).  
+- **Chunk Size**: 4 MB is a solid default. Larger sizes improve speed on high-speed hardware. Smaller sizes may help if errors arise.  
+- **Log File**: Keep or rename the `.txt` log for reference or forensic documentation.
 
+---
 
-WinImager is designed for anyone who needs a basic, reliable and lightweight Windows disk imaging solution. 
+## Technical Notes
+
+- **Works** on Windows with .NET (supports .NET Framework or modern .NET versions with WinForms).  
+- **Access** raw physical drives → requires **administrator privileges**.  
+- **Zero-Fill** unreadable chunks → preserves the file’s correct size (so the `.img` equals the entire drive capacity).  
+- **Model & Serial** retrieval depends on WMI availability; some drives may not provide or may partially provide these fields.  
+- If **hashing** is enabled, WinImager re-reads the final `.img` file to confirm it matches the data that was read from the drive—ensuring a cryptographic-level guarantee of accuracy.
